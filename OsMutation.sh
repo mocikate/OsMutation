@@ -56,11 +56,11 @@ function install(){
 }
 
 function read_lxc_template(){
-    last_lxc_version=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/latest" | grep "LXC" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    last_lxc_version=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -n $last_lxc_version ]]; then
-        image_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/latest" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/')
+        image_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-        os_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/latest" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/' | sed "s/https\:\/\/github.com\/LloydAsp\/OsMutation\/releases\/download\/${last_lxc_version}\///g" | sed "s/\.tar\.gz//g")
+        os_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/' | sed "s/https\:\/\/github.com\/LloydAsp\/OsMutation\/releases\/download\/${last_lxc_version}\///g" | sed "s/\.tar\.gz//g")
         echo "$os_list" | nl
 
         while [ -z "${os_index##*[!0-9]*}" ]; do
@@ -111,11 +111,11 @@ function download_rootfs(){
     mkdir /x
 
     if [ "$cttype" == 'lxc' ] ; then
-        #rootfs.tar.xz
-        wget -qO- $download_link | tar -C /x -xJv
+        wget -O rootfs.tar.xz $download_link
+        tar -C /x -xvf rootfs.tar.xz
     else
-        #rootfs.tar.gz
-        wget -qO- $download_link | tar -C /x -xzv
+        wget -O rootfs.tar.gz $download_link
+        tar -C /x -xzvf rootfs.tar.gz
     fi
 }
 
@@ -160,49 +160,44 @@ function migrate_configuration(){
 
 function install_requirement(){
     if [ -n "$(command -v apk)" ] ; then
-        install curl sed gawk wget gzip xz tar virt-what
+        install curl sed gawk wget gzip rsync xz virt-what
     else
-        install curl sed gawk wget gzip xz-utils virt-what
+        install curl sed gawk wget gzip rsync xz-utils virt-what
     fi
-}
-
-function chroot_run(){
-    if grep -qi alpine /x/etc/issue; then
-        chroot "/x/" sh -c "[ -f /bin/bash ] || apk add bash"
-    fi
-    chroot "/x/" /bin/bash -c "$*"
 }
 
 function replace_os(){
-    mkdir /x/oldroot
-    mount --bind / /x/oldroot
-    chroot_run 'cd /oldroot; '`
-        `'rm -rf $(ls /oldroot | grep -vE "(^dev|^proc|^sys|^run|^x)") ; '`
-        `'cd /; '`
-        `'mv -f $(ls / | grep -vE "(^dev|^proc|^sys|^run|^oldroot)") /oldroot'
-    umount /x/oldroot
+    rsync -a -v \
+        --delete-after \
+        --ignore-times \
+        --exclude="/dev" \
+        --exclude="/proc" \
+        --exclude="/sys" \
+        --exclude="/x" \
+        --exclude="/run" \
+        /x/* /  
 }
 
 function post_install(){
     export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
-    if grep -qi alpine /etc/issue; then
+    if [[ $os_selected == *"alpine"* ]]; then
         install openssh bash
         rc-update add sshd default
         rc-update add mdev sysinit
         rc-update add devfs sysinit
         if [ "$cttype" == 'lxc' ] ; then
-            apk add ifupdown-ng
+            install ifupdown
             rc-update add networking default
             sed -i 's/--auto/-a/' /etc/init.d/networking # fix bug in networking script of lxc
         fi
-    elif grep -qi debian /etc/issue; then
-        install ssh
+    elif [[ $os_selected == *"debian"* ]]; then
+        install ssh bash
         if [ "$cttype" == 'lxc' ] ; then
             install ifupdown
             systemctl disable systemd-networkd.service
         fi
-    elif grep -qi centos /etc/issue; then
-        install openssh
+    elif [[ $os_selected == *"centos"* ]]; then
+        install openssh bash
         if [ "$cttype" == 'lxc' ] ; then
             install ifupdown
             systemctl disable systemd-networkd.service
@@ -210,7 +205,7 @@ function post_install(){
         fi
     fi
     echo PermitRootLogin yes >> /etc/ssh/sshd_config
-    rm -rf /x
+    rm -rf /x /rootfs.tar.xz /rootfs.tar.gz
     sync
     while [ "$reboot_ans" != 'yes' -a "$reboot_ans" != 'no' ] ; do
         echo -ne "\e[1;33mreboot now? (yes/no):\e[m"
