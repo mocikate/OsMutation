@@ -56,11 +56,11 @@ function install(){
 }
 
 function read_lxc_template(){
-    last_lxc_version=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    last_lxc_version=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/tags/LXC-202305292215" | grep "LXC" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -n $last_lxc_version ]]; then
-        image_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/')
+        image_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/tags/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-        os_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/' | sed "s/https\:\/\/github.com\/LloydAsp\/OsMutation\/releases\/download\/${last_lxc_version}\///g" | sed "s/\.tar\.gz//g")
+        os_list=$(curl -Ls "https://api.github.com/repos/LloydAsp/OsMutation/releases/tags/LXC-202305292215" | grep "LXC" | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/' | sed "s/https\:\/\/github.com\/LloydAsp\/OsMutation\/releases\/download\/${last_lxc_version}\///g" | sed "s/\.tar\.gz//g")
         echo "$os_list" | nl
 
         while [ -z "${os_index##*[!0-9]*}" ]; do
