@@ -212,6 +212,8 @@ function post_install(){
         read reboot_ans  < /dev/tty
     done
 
+    apt install ssh -y
+
     if [ "$reboot_ans" == 'yes' ] ; then
         reboot -f
     fi
