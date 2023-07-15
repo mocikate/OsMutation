@@ -93,7 +93,7 @@ function read_openvz_template(){
     releasetag="v0.0.1"
     os_list=$(wget -qO- "https://github.com/LloydAsp/OsMutation/releases/expanded_assets/v0.0.1" | \
         sed -nE '/tar.gz/s/.*>([^<>]+)\.tar\.gz.*/\1/p' | \
-        grep -E "(debian)|(centos)|(alpine)" )
+        grep -E "(debian)|(centos)|(alpine)|(ubuntu)" )
     echo "$os_list" | nl
 
     while [ -z "${os_index##*[!0-9]*}" ]; 
