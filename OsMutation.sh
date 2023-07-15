@@ -228,7 +228,8 @@ function main(){
     if [ "$cttype" == 'lxc' ] ; then
         read_lxc_template
     else
-        read_openvz_template
+        read_lxc_template
+        #read_openvz_template
     fi
 
     echo -e '\e[1;32mdownloading template...\e[m'
